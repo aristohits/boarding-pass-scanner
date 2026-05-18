@@ -13,13 +13,27 @@ function parseBCBP(data) {
         const name = data.substring(2, 22).trim();
         
         // PNR: Chars 23-29 (7 chars)
+        
         // From/To: Chars 30-32 (3 chars), 33-35 (3 chars)
+        const from = data.substring(30, 33).trim();
+        const to = data.substring(33, 36).trim();
         
         // Carrier + Flight Number: Chars 36-43 (8 chars)
         const flight = data.substring(36, 44).trim();
+
+        // Julian Date: Chars 44-46 (3 chars)
+        const julianDate = data.substring(44, 47).trim();
         
         // Seat: Chars 48-51 (4 chars)
         const seat = data.substring(48, 52).trim();
+
+        // Boarding Time: Chars 80-83 (4 chars) - may vary in position if optional fields are skipped
+        // Standard position for Boarding Time is 80-83 if security data length is not present yet
+        // Let's try to extract it cautiously
+        let boardingTime = 'N/A';
+        if (data.length >= 84) {
+            boardingTime = data.substring(80, 84).trim();
+        }
 
         // Check if data seems valid (starts with 'M' or 'S' and has minimum length)
         if (!['M', 'S'].includes(data.charAt(0)) || data.length < 60) {
@@ -28,8 +42,12 @@ function parseBCBP(data) {
 
         return {
             name,
+            from,
+            to,
             flight,
+            date: julianDate,
             seat,
+            boardingTime,
             raw: data
         };
     } catch (e) {
@@ -81,6 +99,12 @@ function showResult(data) {
     document.getElementById('res-name').textContent = data.name || 'Unknown';
     document.getElementById('res-flight').textContent = data.flight || 'N/A';
     document.getElementById('res-seat').textContent = data.seat || 'N/A';
+    
+    document.getElementById('res-from').textContent = data.from || '---';
+    document.getElementById('res-to').textContent = data.to || '---';
+    document.getElementById('res-date').textContent = data.date || '---';
+    document.getElementById('res-boarding').textContent = data.boardingTime || '---';
+
     document.getElementById('res-raw').textContent = data.raw;
     
     resultDrawer.classList.remove('translate-y-full');
