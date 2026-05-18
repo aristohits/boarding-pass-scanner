@@ -24,6 +24,20 @@ function parseBCBP(data) {
         // Julian Date: Chars 44-46 (3 chars)
         const julianDate = data.substring(44, 47).trim();
         
+        // Compartment Code (Class): Char 47 (1 char)
+        const classCode = data.substring(47, 48);
+        const classMap = {
+            'Y': 'Economy',
+            'J': 'Business',
+            'F': 'First Class',
+            // Common additional codes
+            'C': 'Business',
+            'P': 'First Class',
+            'M': 'Economy',
+            'B': 'Economy'
+        };
+        const flightClass = classMap[classCode] || 'Economy';
+
         // Seat: Chars 48-51 (4 chars)
         const seat = data.substring(48, 52).trim();
 
@@ -46,6 +60,7 @@ function parseBCBP(data) {
             to,
             flight,
             date: julianDate,
+            flightClass,
             seat,
             boardingTime,
             raw: data
@@ -95,14 +110,34 @@ function startScanning() {
     });
 }
 
+// Helper to convert Julian Date (DDD) to Human Readable Date
+function formatJulianDate(julianStr) {
+    const dayOfYear = parseInt(julianStr, 10);
+    if (isNaN(dayOfYear) || dayOfYear < 1 || dayOfYear > 366) return 'N/A';
+
+    const date = new Date();
+    const currentYear = date.getFullYear();
+    
+    // Create date object for Jan 1st of current year
+    const targetDate = new Date(currentYear, 0, 1);
+    // Add the days (Julian Date is 1-based, so subtract 1)
+    targetDate.setDate(dayOfYear);
+
+    return targetDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
 function showResult(data) {
     document.getElementById('res-name').textContent = data.name || 'Unknown';
     document.getElementById('res-flight').textContent = data.flight || 'N/A';
-    document.getElementById('res-seat').textContent = data.seat || 'N/A';
+    document.getElementById('res-class').textContent = data.flightClass || 'Economy';
+    
+    // Remove leading zeros from seat (e.g., 019A -> 19A)
+    const displaySeat = (data.seat || 'N/A').replace(/^0+/, '');
+    document.getElementById('res-seat').textContent = displaySeat || 'N/A';
     
     document.getElementById('res-from').textContent = data.from || '---';
     document.getElementById('res-to').textContent = data.to || '---';
-    document.getElementById('res-date').textContent = data.date || '---';
+    document.getElementById('res-date').textContent = formatJulianDate(data.date);
     document.getElementById('res-boarding').textContent = data.boardingTime || '---';
 
     document.getElementById('res-raw').textContent = data.raw;
